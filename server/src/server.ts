@@ -25,7 +25,6 @@ async function startServer(): Promise<void> {
     typeDefs,
     resolvers,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
-    // context: ({ req }) => ({ req }),
     introspection: process.env.NODE_ENV !== 'production',
   });
 

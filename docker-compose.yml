@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mern-ts-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=merngraphql
+    networks:
+      - mern-ts-network
+
+  server:
+    build: ./server
+    container_name: mern-ts-server
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/merngraphql
+    depends_on:
+      - mongo
+    volumes:
+      - ./server/src:/app/src
+      - /app/node_modules
+    networks:
+      - mern-ts-network
+
+  # client:
+  #   build: ./client
+  #   container_name: mern-ts-client
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - server
+  #   volumes:
+  #     - ./client/src:/app/src
+  #     - /app/node_modules
+  #   networks:
+  #     - mern-ts-network
+
+volumes:
+  mongo_data:
+
+networks:
+  mern-ts-network:
+    driver: bridge

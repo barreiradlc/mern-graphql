@@ -17,10 +17,8 @@ async function startServer(): Promise<void> {
   const app = express();
   const httpServer = http.createServer(app);
 
-  // CORS configuration
   app.use(cors());
 
-  // Apollo Server setup
   const server = new ApolloServer({
     typeDefs,
     resolvers,
@@ -30,7 +28,6 @@ async function startServer(): Promise<void> {
 
   await server.start();
   
-  // Apply middleware
   app.use(
     '/graphql',
     cors<cors.CorsRequest>({
@@ -43,12 +40,10 @@ async function startServer(): Promise<void> {
     })
   );
 
-  // Health check endpoint
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
   });
 
-  // MongoDB connection
   const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/merngraphql';
   
   try {

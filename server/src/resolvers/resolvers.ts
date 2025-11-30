@@ -1,6 +1,8 @@
-import { eq, like, and, ne } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import { db, users } from '../db';
-import { UserInput, UpdateUserInput } from '../types/User';
+import { posts } from '../db/schema';
+import { PostInput } from '../types/Post';
+import { UpdateUserInput, UserInput } from '../types/User';
 
 // GraphQL response types
 interface GraphQLUser {
@@ -9,12 +11,45 @@ interface GraphQLUser {
   email: string;
   age?: number | null;
   bio?: string | null;
+  // posts: GraphQLPost[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// GraphQL response types
+interface GraphQLPost {
+  id: string;
+  description: string;
+  author: GraphQLUser;
+  authorId: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export const resolvers = {
   Query: {
+    posts: async (): Promise<GraphQLPost[]> => {
+      try {
+        const allPosts = (await db.query.posts.findMany({ with: { author: true } }));
+        // const allPosts = (await db.select().from(posts).orderBy(posts.createdAt));
+        return allPosts.map(post => ({
+          ...post,
+          id: post.id.toString(), // Convert ID to string for GraphQL
+          authorId: post.authorId.toString(), // Convert ID to string for GraphQL
+          author: {
+            ...post.author,
+            id: post.author.id.toString(),
+            createdAt: post.author.createdAt.toISOString(),
+            updatedAt: post.author.updatedAt.toISOString(),
+          }, // Convert ID to string for GraphQL
+          createdAt: post.createdAt.toISOString(),
+          updatedAt: post.updatedAt.toISOString(),
+        }));
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        throw new Error('Error fetching users');
+      }
+    },
     users: async (): Promise<GraphQLUser[]> => {
       try {
         const allUsers = await db.select().from(users).orderBy(users.createdAt);
@@ -73,6 +108,42 @@ export const resolvers = {
   },
 
   Mutation: {
+    createPost: async (_: any, { input }: { input: PostInput }): Promise<GraphQLPost> => {
+      try {
+      // Check if user with email already exists
+      const [existingUser] = await db.select().from(users).where(eq(users.id, input.authorId));
+      
+      if (!existingUser) {
+        throw new Error('Author not found');
+      }
+
+       const [newPost] = await db.insert(posts).values({
+          description: input.description,
+          authorId: input.authorId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }).returning();
+
+        return {
+          ...newPost,
+          id: newPost.id.toString(),
+          authorId: existingUser.id.toString(),
+          author: {
+            id: existingUser.id.toString(),
+            name: existingUser.name,
+            email: existingUser.email,
+            createdAt: existingUser.createdAt.toISOString(),
+            updatedAt: existingUser.updatedAt.toISOString(),
+          },
+          createdAt: newPost.createdAt.toISOString(),
+          updatedAt: newPost.updatedAt.toISOString(),
+        };
+      } catch (err: any) {
+        console.error('Error creating post:', err);
+        throw new Error(err.message || 'Error creating post');
+      }
+    },
+
     createUser: async (_: any, { input }: { input: UserInput }): Promise<GraphQLUser> => {
       try {
         // Check if user with email already exists

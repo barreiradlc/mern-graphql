@@ -5,6 +5,7 @@ export const typeDefs = `#graphql
     email: String!
     age: Int
     bio: String
+    posts: [Post]
     createdAt: String!
     updatedAt: String!
   }
@@ -23,9 +24,21 @@ export const typeDefs = `#graphql
     bio: String
   }
 
-  
+  type Post {
+    id: ID!
+    description: String!
+    authorId: ID!
+    author: User
+  }
+
+  input PostInput {
+    authorId: ID!
+    description: String!
+  }
 
   type Query {
+    "Get all posts"
+    posts: [Post!]!
     "Get all users"
     users: [User!]!
     "Get a user by ID"
@@ -37,6 +50,8 @@ export const typeDefs = `#graphql
   type Mutation {
     "Create a new user"
     createUser(input: UserInput!): User!
+    "Create a new post"
+    createPost(input: PostInput!): Post!
     "Update an existing user"
     updateUser(id: ID!, input: UpdateUserInput!): User
     "Delete a user"

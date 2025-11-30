@@ -1,11 +1,11 @@
-FROM node:18-alpine
+FROM node:24
 
 WORKDIR /app
 
 # Install dependencies first for better caching
 COPY package*.json ./
 COPY tsconfig.json ./
-COPY ./src/drizzle.config.ts ./src/
+# COPY ./src/drizzle.config.ts ./src/
 
 
 RUN npm install
@@ -14,8 +14,8 @@ RUN npm install
 COPY . .
 
 # Create a non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+RUN addgroup --gid 1001 --system nodejs
+RUN adduser --system nodejs -u 1001
 RUN chown -R nodejs:nodejs /app
 USER nodejs
 

@@ -1,35 +1,45 @@
 services:
-  mongo:
-    image: mongo:latest
-    container_name: mern-ts-mongo
+  postgres:
+    image: postgres:15-alpine
+    container_name: pern-ts-postgres
     ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
+      - "5432:5432"
     environment:
-      - MONGO_INITDB_DATABASE=merngraphql
+      - POSTGRES_DB=perngraphql
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
     networks:
-      - mern-ts-network
+      - pern-ts-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d perngraphql"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   server:
     build: ./server
-    container_name: mern-ts-server
+    container_name: pern-ts-server
     ports:
       - "5000:5000"
     environment:
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://mongo:27017/merngraphql
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/merngraphql
       - CHOKIDAR_USEPOLLING=true  # Enable file watching in Docker
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
     volumes:
       - ./server/src:/app/src
       - ./server/package.json:/app/package.json
       - ./server/tsconfig.json:/app/tsconfig.json
+      - ./server/src/drizzle.config.ts:/app/src/drizzle.config.ts
       - /app/node_modules
-      - /app/dist  # Exclude dist from volume to avoid conflicts
+      - /app/dist
     networks:
-      - mern-ts-network
+      - pern-ts-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health || exit 1"]
       interval: 30s
@@ -40,7 +50,7 @@ services:
 
   # client:
   #   build: ./client
-  #   container_name: mern-ts-client
+  #   container_name: pern-ts-client
   #   ports:
   #     - "3000:3000"
   #   depends_on:
@@ -49,11 +59,11 @@ services:
   #     - ./client/src:/app/src
   #     - /app/node_modules
   #   networks:
-  #     - mern-ts-network
+  #     - pern-ts-network
 
 volumes:
-  mongo_data:
+  postgres_data:
 
 networks:
-  mern-ts-network:
+  pern-ts-network:
     driver: bridge

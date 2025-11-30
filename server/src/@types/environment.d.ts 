@@ -1,0 +1,13 @@
+    // environment.d.ts
+    declare global {
+      namespace NodeJS {
+        interface ProcessEnv {
+          DATABASE_URL: string;
+          // Add any other environment variables you use here
+          // For example: API_KEY: string;
+        }
+      }
+    }
+
+    // This export is important to make it a module and merge with global types
+    export {};

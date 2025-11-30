@@ -5,6 +5,8 @@ WORKDIR /app
 # Install dependencies first for better caching
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY ./src/drizzle.config.ts ./src/
+
 
 RUN npm install
 
